@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ platform_name }}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <style>
+      .spirit-fab { position: fixed; left: 16px; bottom: 18px; z-index: 1050; border-radius: 999px; }
+      .video-thumb { aspect-ratio: 16 / 9; object-fit: cover; }
+      .nav-glass { backdrop-filter: blur(6px); }
+      .hover-lift { transition: transform .2s ease, box-shadow .2s ease; }
+      .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 .6rem 1.2rem rgba(0,0,0,.1) !important; }
+      .section-title { font-weight: 700; letter-spacing: .2px; }
+      .hero-soft { background: linear-gradient(135deg, #f8fff9 0%, #ffffff 100%); }
+      @media (max-width: 768px) {
+        .navbar .container { gap: .5rem; }
+        .navbar form { width: 100%; }
+      }
+    </style>
+</head>
+<body class="bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-success shadow-sm mb-4 nav-glass">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">{{ platform_name }}</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <div class="d-flex align-items-center gap-2 me-auto mt-2 mt-lg-0">
+                <a class="btn btn-outline-light btn-sm" href="{% url 'posts_list' %}">المقالات</a>
+                <button class="btn btn-outline-light btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#botNotifPanel" aria-controls="botNotifPanel">🔔</button>
+                {% if request.user.is_authenticated %}
+                    <a class="btn btn-outline-light btn-sm" href="{% url 'my_favorites' %}">مفضلتي</a>
+                    {% if can_moderate %}
+                    <a class="btn btn-outline-light btn-sm" href="{% url 'users_moderation' %}">إدارة المستخدمين</a>
+                    <a class="btn btn-outline-light btn-sm" href="{% url 'pending_comments' %}">مراجعة التعليقات</a>
+                    {% endif %}
+                    <span class="text-white small">مرحبًا {{ request.user.username }}</span>
+                    <a class="btn btn-light btn-sm" href="{% url 'logout' %}">تسجيل خروج</a>
+                {% else %}
+                    <a class="btn btn-outline-light btn-sm" href="{% url 'login' %}">دخول</a>
+                    <a class="btn btn-light btn-sm" href="{% url 'register' %}">حساب جديد</a>
+                {% endif %}
+            </div>
+            <form class="d-flex mt-2 mt-lg-0" action="{% url 'search' %}" method="get">
+                <input class="form-control me-2" type="search" name="q" placeholder="ابحث في محتوى القناة">
+                <button class="btn btn-light" type="submit">بحث</button>
+            </form>
+        </div>
+    </div>
+</nav>
+<main class="container mb-5">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+</main>
+<footer class="bg-white border-top py-3">
+    <div class="container d-flex justify-content-between text-muted small">
+        <span>{{ platform_name }}</span>
+        <span>Guest mode متاح: تصفح وبحث بدون تسجيل</span>
+    </div>
+</footer>
+<button type="button" class="btn btn-success spirit-fab shadow" data-bs-toggle="offcanvas" data-bs-target="#spiritPanel" aria-controls="spiritPanel">
+    ذكر
+</button>
+<div class="offcanvas offcanvas-start" tabindex="-1" id="spiritPanel" aria-labelledby="spiritPanelLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="spiritPanelLabel">ذكر وآيات وأحاديث</h5>
+    <a class="btn btn-sm btn-outline-success me-2" href="?spirit_refresh=1&spirit=open">تحديث المحتوى</a>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    {% if request.user.is_authenticated and spirit_pinned_cards %}
+      <h6 class="mb-3">المثبتة</h6>
+      {% for card in spirit_pinned_cards %}
+      <div class="card border-primary shadow-sm mb-3">
+        <div class="card-body">
+          <span class="badge bg-primary mb-2">{{ card.kind }}</span>
+          <h6 class="mb-2">{{ card.title }}</h6>
+          {% for line in card.lines %}
+            <p class="mb-1">{{ line }}</p>
+          {% endfor %}
+          <small class="text-muted d-block mb-2">{{ card.source }}</small>
+          <form method="post" action="{% url 'toggle_spirit_pin' %}">
+            {% csrf_token %}
+            <input type="hidden" name="card_hash" value="{{ card.card_hash }}">
+            <input type="hidden" name="kind" value="{{ card.kind }}">
+            <input type="hidden" name="title" value="{{ card.title }}">
+            <input type="hidden" name="line_text" value="{{ card.lines.0 }}">
+            <input type="hidden" name="source" value="{{ card.source }}">
+            <button class="btn btn-outline-danger btn-sm">إلغاء التثبيت</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+      <hr>
+    {% endif %}
+    {% for card in spirit_cards %}
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body">
+          <span class="badge bg-success mb-2">{{ card.kind }}</span>
+          <h6 class="mb-2">{{ card.title }}</h6>
+          {% for line in card.lines %}
+            <p class="mb-1">{{ line }}</p>
+          {% endfor %}
+          <small class="text-muted d-block mb-2">{{ card.source }}</small>
+          {% if request.user.is_authenticated %}
+          <form method="post" action="{% url 'toggle_spirit_pin' %}">
+            {% csrf_token %}
+            <input type="hidden" name="card_hash" value="{{ card.card_hash }}">
+            <input type="hidden" name="kind" value="{{ card.kind }}">
+            <input type="hidden" name="title" value="{{ card.title }}">
+            <input type="hidden" name="line_text" value="{{ card.lines.0 }}">
+            <input type="hidden" name="source" value="{{ card.source }}">
+            {% if card.card_hash in spirit_pinned_hashes %}
+            <button class="btn btn-outline-danger btn-sm">إلغاء التثبيت</button>
+            {% else %}
+            <button class="btn btn-outline-success btn-sm">تثبيت</button>
+            {% endif %}
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">لا توجد مواد متاحة الآن.</p>
+    {% endfor %}
+  </div>
+</div>
+<div class="offcanvas offcanvas-start" tabindex="-1" id="botNotifPanel" aria-labelledby="botNotifPanelLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="botNotifPanelLabel">إشعارات البوت</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    {% for n in recent_bot_notifications %}
+      <div class="card border-0 shadow-sm mb-2">
+        <div class="card-body">
+          <h6 class="mb-1">{{ n.title }}</h6>
+          <div class="small text-muted mb-1">{{ n.sent_at|date:"Y-m-d H:i" }} - {{ n.sent_count }} مستلم</div>
+          {% if n.youtube_url %}<a href="{{ n.youtube_url }}" target="_blank" rel="noopener noreferrer">فتح الفيديو</a>{% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-muted">لا توجد إشعارات حتى الآن.</p>
+    {% endfor %}
+    <a class="btn btn-outline-success w-100 mt-2" href="{% url 'bot_notifications' %}">عرض كل الإشعارات</a>
+  </div>
+</div>
+<!-- Mustafa Juba -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(() => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("spirit") === "open") {
+    const el = document.getElementById("spiritPanel");
+    if (el) {
+      const panel = bootstrap.Offcanvas.getOrCreateInstance(el);
+      panel.show();
+    }
+  }
+})();
+</script>
+</body>
+</html>

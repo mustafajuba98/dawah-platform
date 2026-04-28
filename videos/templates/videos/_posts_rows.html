@@ -1,0 +1,25 @@
+{% for post in page_obj %}
+<article class="card border-0 shadow-sm mb-3 hover-lift">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="badge text-bg-light border">{{ post.author.username }}</span>
+      <span class="small text-muted">{{ post.created_at|date:"Y-m-d H:i" }}</span>
+    </div>
+    <h2 class="h5 mb-2"><a class="text-decoration-none" href="{% url 'post_detail' post.slug %}">{{ post.title }}</a></h2>
+    <p class="text-muted mb-2">{{ post.content|truncatechars:220 }}</p>
+    <details>
+      <summary class="small">عرض سريع داخل الصفحة</summary>
+      <div class="mt-2">{{ post.content|truncatechars:800|linebreaks }}</div>
+    </details>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+      <span class="small text-muted">تعليقات: {{ post.comments.count }} | إعجابات: {{ post.likes.count }}</span>
+      <a href="{% url 'post_detail' post.slug %}" class="btn btn-outline-success btn-sm">فتح التفاصيل</a>
+    </div>
+  </div>
+</article>
+{% endfor %}
+{% if page_obj.has_next %}
+<div id="posts-next-page" data-next-page="{{ page_obj.next_page_number }}"></div>
+{% else %}
+<div id="posts-next-page" data-next-page=""></div>
+{% endif %}

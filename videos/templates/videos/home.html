@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}الرئيسية{% endblock %}
+{% block content %}
+<div class="p-4 rounded-3 border mb-4 hero-soft">
+    <h1 class="h3 section-title mb-2">مرحبًا بك في {{ platform_name }}</h1>
+    <p class="text-muted mb-0">منصة تعليمية دعوية منظمة: بحث، قوائم تشغيل، مقالات، ومتابعة يومية.</p>
+</div>
+
+<section class="mb-4">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <a class="card h-100 text-decoration-none shadow-sm border-0 hover-lift" href="{{ telegram_channel_url }}" target="_blank" rel="noopener noreferrer">
+        <div class="card-body">
+          <h2 class="h6">قناة التليجرام</h2>
+          <p class="text-muted mb-0">تابع آخر الدروس والتنبيهات مباشرة.</p>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-4">
+      <a class="card h-100 text-decoration-none shadow-sm border-0 hover-lift" href="{{ telegram_bot_url }}" target="_blank" rel="noopener noreferrer">
+        <div class="card-body">
+          <h2 class="h6">بوت التليجرام</h2>
+          <p class="text-muted mb-0">ابحث عن المحتوى وأرسل فيديو يومي بسهولة.</p>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-4">
+      <a class="card h-100 text-decoration-none shadow-sm border-0 hover-lift" href="{{ whatsapp_group_url }}" target="_blank" rel="noopener noreferrer">
+        <div class="card-body">
+          <h2 class="h6">جروب واتساب للمتابعة</h2>
+          <p class="text-muted mb-0">للتواصل مع المجتمع ومتابعة الجديد.</p>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="mb-4">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 mb-0">تنبيهات بوت التليجرام</h2>
+        <a href="{% url 'bot_notifications' %}" class="btn btn-outline-success btn-sm">عرض الكل</a>
+      </div>
+      <div class="row g-2">
+        {% for n in landing_notifications %}
+          <div class="col-md-4">
+            <div class="border rounded p-2 h-100">
+              <div class="fw-semibold mb-1">{{ n.title }}</div>
+              <div class="small text-muted mb-1">{{ n.sent_at|date:"Y-m-d H:i" }} - {{ n.sent_count }} مستلم</div>
+              {% if n.youtube_url %}<a href="{{ n.youtube_url }}" target="_blank" rel="noopener noreferrer">فتح الفيديو</a>{% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <p class="text-muted mb-0">لا توجد تنبيهات مسجلة بعد.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mb-4">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <h2 class="h5 mb-2">مواقيت الصلاة - {{ prayer_place }}</h2>
+      {% if prayer and prayer.rows %}
+        <div class="d-flex gap-3 flex-wrap small text-muted mb-3">
+          {% if prayer.gregorian %}<span>{{ prayer.gregorian }}</span>{% endif %}
+          {% if prayer.hijri %}<span>{{ prayer.hijri }} هـ</span>{% endif %}
+        </div>
+        <div class="row g-2">
+          {% for row in prayer.rows %}
+            <div class="col-6 col-md-4">
+              <div class="border rounded p-2 d-flex justify-content-between">
+                <span>{{ row.label }}</span><strong dir="ltr">{{ row.time }}</strong>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted mb-0">تعذر تحميل المواقيت الآن، حاول لاحقًا.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<section class="mb-4">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="card h-100 shadow-sm border-0">
+        <div class="card-body">
+          <h2 class="h6">كيف تبدأ؟</h2>
+          <p class="text-muted mb-0">سجل حسابك، فعل بريدك، ثم ابدأ حفظ المحتوى المفضل ومتابعته.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100 shadow-sm border-0">
+        <div class="card-body">
+          <h2 class="h6">الوضع الضيف</h2>
+          <p class="text-muted mb-0">يمكن لأي زائر البحث والتصفح بدون تسجيل.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100 shadow-sm border-0">
+        <div class="card-body">
+          <h2 class="h6">للمستخدم المسجل</h2>
+          <p class="text-muted mb-0">إضافة للمفضلة، وإدارة تجربة مشاهدة أفضل.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<h2 class="h5 mb-3 section-title">الفيديوهات المميزة</h2>
+<div class="row g-3 mb-4">
+{% for video in featured_videos %}
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm hover-lift">
+      <img src="{{ video.thumbnail_url }}" class="card-img-top video-thumb" alt="{{ video.title }}" loading="lazy">
+      <div class="card-body"><a href="{% url 'video_detail' video.video_id %}" class="text-decoration-none">{{ video.title }}</a></div>
+    </div>
+  </div>
+{% empty %}<p>لا توجد فيديوهات مميزة حاليًا.</p>{% endfor %}
+</div>
+<h2 class="h5 mb-3 section-title">أحدث الفيديوهات</h2>
+<div class="row g-3">
+{% for video in recent_videos %}
+  <div class="col-md-3">
+    <div class="card h-100 shadow-sm hover-lift">
+      <img src="{{ video.thumbnail_url }}" class="card-img-top video-thumb" alt="{{ video.title }}" loading="lazy">
+      <div class="card-body"><a href="{% url 'video_detail' video.video_id %}" class="text-decoration-none">{{ video.title }}</a></div>
+    </div>
+  </div>
+{% empty %}<p>لا توجد فيديوهات بعد.</p>{% endfor %}
+</div>
+
+{% endblock %}

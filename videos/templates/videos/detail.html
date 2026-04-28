@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ video.title }}{% endblock %}
+{% block content %}
+<div class="bg-white p-4 rounded-3 border">
+<h1 class="h4">{{ video.title }}</h1>
+<div class="ratio ratio-16x9 my-3"><iframe src="https://www.youtube-nocookie.com/embed/{{ video.video_id }}" allowfullscreen></iframe></div>
+<p class="text-muted">{{ video.get_category_display }} | {{ video.view_count }} مشاهدة</p>
+<a class="btn btn-outline-dark btn-sm mb-3" href="https://www.youtube.com/watch?v={{ video.video_id }}" target="_blank" rel="noopener noreferrer">لو الفيديو لا يعمل داخل الموقع، شاهده على YouTube</a>
+{% if playlist_navigation %}
+<div class="mb-3">
+  <a class="btn btn-outline-primary btn-sm" href="{{ playlist_navigation.youtube_playlist_url }}" target="_blank" rel="noopener noreferrer">فتح الفيديو داخل قائمة التشغيل على YouTube</a>
+  <a class="btn btn-outline-secondary btn-sm" href="{{ playlist_navigation.playlist_url }}">عرض كل فيديوهات القائمة: {{ playlist_navigation.playlist_title }}</a>
+</div>
+<div class="d-flex gap-2 mb-3">
+  {% if playlist_navigation.prev_video_id %}
+  <a class="btn btn-light btn-sm border" href="{% url 'video_detail' playlist_navigation.prev_video_id %}?playlist={{ playlist_navigation.playlist_id }}">السابق في القائمة</a>
+  {% endif %}
+  {% if playlist_navigation.next_video_id %}
+  <a class="btn btn-light btn-sm border" href="{% url 'video_detail' playlist_navigation.next_video_id %}?playlist={{ playlist_navigation.playlist_id }}">التالي في القائمة</a>
+  {% endif %}
+</div>
+{% endif %}
+{% if request.user.is_authenticated %}
+<form method="post" action="{% url 'toggle_favorite' video.video_id %}" class="mb-3">
+  {% csrf_token %}
+  {% if is_favorite %}
+    <button class="btn btn-outline-danger btn-sm" type="submit">إزالة من المفضلة</button>
+  {% else %}
+    <button class="btn btn-outline-success btn-sm" type="submit">إضافة إلى المفضلة</button>
+  {% endif %}
+</form>
+{% endif %}
+{% if video.ai_summary %}<h2 class="h6">الملخص</h2><p>{{ video.ai_summary|linebreaks }}</p>{% endif %}
+<details><summary>الوصف الكامل</summary><p>{{ video.description|linebreaks }}</p></details>
+</div>
+<h2 class="h5 mt-4">فيديوهات مرتبطة</h2>
+<div class="row g-3">
+{% for item in related_videos %}
+<div class="col-md-4"><div class="card"><img src="{{ item.thumbnail_url }}" class="card-img-top"><div class="card-body"><a href="{% url 'video_detail' item.video_id %}">{{ item.title }}</a></div></div></div>
+{% endfor %}
+</div>
+{% endblock %}

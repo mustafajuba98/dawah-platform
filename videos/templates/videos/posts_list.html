@@ -1,0 +1,53 @@
+﻿{% extends "base.html" %}
+{% block title %}المقالات{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h4 mb-0 section-title">المقالات</h1>
+  {% if can_publish %}
+  <a href="{% url 'create_post' %}" class="btn btn-success">نشر مقال</a>
+  {% endif %}
+</div>
+<form class="bg-white border-0 shadow-sm rounded-3 p-3 mb-3" method="get" id="posts-filter-form">
+  <div class="row g-2">
+    <div class="col-md-6"><input class="form-control" type="text" name="q" value="{{ query }}" placeholder="ابحث في العنوان أو المحتوى"></div>
+    <div class="col-md-4"><input class="form-control" type="text" name="author" value="{{ author_filter }}" placeholder="فلترة باسم الكاتب"></div>
+    <div class="col-md-2 d-grid"><button class="btn btn-success">بحث</button></div>
+  </div>
+</form>
+
+<div id="posts-stream">
+  {% include "videos/_posts_rows.html" %}
+</div>
+
+<script>
+(() => {
+  const stream = document.getElementById("posts-stream");
+  if (!stream) return;
+  let loading = false;
+  const observer = new IntersectionObserver(async (entries) => {
+    const entry = entries[0];
+    if (!entry.isIntersecting || loading) return;
+    const marker = document.getElementById("posts-next-page");
+    if (!marker) return;
+    const next = marker.dataset.nextPage;
+    if (!next) return;
+    loading = true;
+    const params = new URLSearchParams(window.location.search);
+    params.set("page", next);
+    params.set("partial", "1");
+    const response = await fetch(`${window.location.pathname}?${params.toString()}`, {
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    });
+    const html = await response.text();
+    marker.remove();
+    stream.insertAdjacentHTML("beforeend", html);
+    loading = false;
+    const newMarker = document.getElementById("posts-next-page");
+    if (newMarker) observer.observe(newMarker);
+  }, { rootMargin: "300px" });
+
+  const firstMarker = document.getElementById("posts-next-page");
+  if (firstMarker) observer.observe(firstMarker);
+})();
+</script>
+{% endblock %}

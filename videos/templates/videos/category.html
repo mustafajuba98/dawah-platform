@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ category_name }}{% endblock %}
+{% block content %}
+<h1 class="h5 mb-3">{{ category_name }}</h1>
+<div class="row g-3">
+{% for video in page_obj %}
+<div class="col-md-4"><div class="card h-100"><img src="{{ video.thumbnail_url }}" class="card-img-top video-thumb" alt="{{ video.title }}"><div class="card-body"><a href="{% url 'video_detail' video.video_id %}">{{ video.title }}</a></div></div></div>
+{% empty %}<p>لا توجد فيديوهات في هذا التصنيف.</p>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+﻿{% extends "base.html" %}
+{% block title %}نشر مقال{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <div class="bg-white p-4 border-0 shadow-sm rounded-3">
+      <h1 class="h4 section-title mb-3">نشر مقال جديد</h1>
+      <p class="text-muted small mb-4">اكتب عنوانًا واضحًا، ثم قدّم محتوى مرتبًا ليسهل قراءته على الجوال والكمبيوتر.</p>
+      <form method="post">{% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">العنوان</label>
+          <input class="form-control form-control-lg" name="title" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">المحتوى</label>
+          <textarea class="form-control" name="content" rows="14" required></textarea>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success px-4">نشر</button>
+          <a href="{% url 'posts_list' %}" class="btn btn-outline-secondary">إلغاء</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

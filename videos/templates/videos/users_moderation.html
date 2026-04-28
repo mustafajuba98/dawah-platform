@@ -1,0 +1,69 @@
+﻿{% extends "base.html" %}
+{% block title %}إدارة المستخدمين{% endblock %}
+{% block content %}
+<h1 class="h5 mb-3">إدارة المستخدمين</h1>
+<form method="get" class="bg-white border rounded-3 p-2 mb-3">
+  <div class="row g-2">
+    <div class="col-md-5"><input class="form-control" name="q" value="{{ query }}" placeholder="بحث باسم المستخدم أو الإيميل"></div>
+    <div class="col-md-3">
+      <select class="form-select" name="role">
+        <option value="">كل الأدوار</option>
+        {% for key,label in role_choices %}
+          <option value="{{ key }}" {% if selected_role == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" name="status">
+        <option value="">كل الحالات</option>
+        <option value="active" {% if selected_status == "active" %}selected{% endif %}>نشط</option>
+        <option value="banned" {% if selected_status == "banned" %}selected{% endif %}>موقوف</option>
+      </select>
+    </div>
+    <div class="col-md-2 d-grid"><button class="btn btn-success">تطبيق</button></div>
+  </div>
+</form>
+<div class="table-responsive bg-white border rounded-3 p-2">
+<table class="table table-sm align-middle">
+<thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th><th>التعليق</th><th>إجراءات</th></tr></thead>
+<tbody>
+{% for row in page_obj %}
+  {% with user=row.user p=row.profile %}
+  <tr>
+    <td>{{ user.username }}</td>
+    <td>{% if p %}{{ p.get_role_display }}{% else %}مستخدم{% endif %}</td>
+    <td>{% if user.is_active %}نشط{% else %}موقوف{% endif %}</td>
+    <td>{% if p and p.can_comment %}مسموح{% else %}ممنوع{% endif %}</td>
+    <td>
+      <form method="post" class="d-flex gap-1 flex-wrap">{% csrf_token %}
+        <input type="hidden" name="user_id" value="{{ user.id }}">
+        <button class="btn btn-outline-danger btn-sm" name="action" value="ban">حظر</button>
+        <button class="btn btn-outline-success btn-sm" name="action" value="unban">فك الحظر</button>
+        <button class="btn btn-outline-warning btn-sm" name="action" value="block_comments">منع تعليق</button>
+        <button class="btn btn-outline-primary btn-sm" name="action" value="allow_comments">سماح تعليق</button>
+        <button class="btn btn-outline-secondary btn-sm" name="action" value="make_moderator">جعله مشرف</button>
+        <button class="btn btn-outline-secondary btn-sm" name="action" value="make_user">جعله مستخدم</button>
+      </form>
+    </td>
+  </tr>
+  {% endwith %}
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-3">
+  <ul class="pagination pagination-sm justify-content-center">
+    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?q={{ query }}&role={{ selected_role }}&status={{ selected_status }}&page={{ page_obj.previous_page_number }}">السابق</a></li>{% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num == page_obj.number %}
+      <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+      {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+      <li class="page-item"><a class="page-link" href="?q={{ query }}&role={{ selected_role }}&status={{ selected_status }}&page={{ num }}">{{ num }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?q={{ query }}&role={{ selected_role }}&status={{ selected_status }}&page={{ page_obj.next_page_number }}">التالي</a></li>{% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

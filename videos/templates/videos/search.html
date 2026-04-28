@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}البحث{% endblock %}
+{% block content %}
+<h1 class="h5 mb-3">نتائج البحث عن: {{ query }}</h1>
+<div class="d-flex gap-2 flex-wrap mb-3">
+  <a class="badge text-bg-{% if selected_newest %}success{% else %}secondary{% endif %} text-decoration-none p-2" href="?q={{ query }}&playlist={{ selected_playlist }}&content_type={{ selected_content_type }}&sort={% if selected_newest %}{% else %}newest{% endif %}">الأحدث</a>
+  <a class="badge text-bg-{% if selected_most_viewed %}success{% else %}secondary{% endif %} text-decoration-none p-2" href="?q={{ query }}&playlist={{ selected_playlist }}&content_type={{ selected_content_type }}&sort={% if selected_most_viewed %}{% else %}most_viewed{% endif %}">الأكثر مشاهدة</a>
+  <a class="badge text-bg-{% if selected_shorts %}success{% else %}secondary{% endif %} text-decoration-none p-2" href="?q={{ query }}&playlist={{ selected_playlist }}&sort={{ selected_sort }}&content_type={% if selected_shorts %}{% else %}shorts{% endif %}">Shorts</a>
+  <a class="badge text-bg-light border text-dark text-decoration-none p-2" href="{% url 'search' %}">إزالة كل الفلاتر</a>
+</div>
+<form method="get" class="row g-2 mb-3">
+  <div class="col-md-4"><input class="form-control" type="text" name="q" value="{{ query }}"></div>
+  <div class="col-md-3"><select class="form-select" name="playlist"><option value="">قائمة تشغيل</option>{% for key,label in playlists %}<option value="{{ key }}" {% if selected_playlist == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <input type="hidden" name="sort" value="{{ selected_sort }}">
+  <input type="hidden" name="content_type" value="{{ selected_content_type }}">
+  <div class="col-md-2"><button class="btn btn-success w-100">تطبيق</button></div>
+</form>
+<div class="row g-3">
+{% for video in page_obj %}
+<div class="col-md-4"><div class="card h-100"><img src="{{ video.thumbnail_url }}" class="card-img-top video-thumb" alt="{{ video.title }}"><div class="card-body"><a href="{% url 'video_detail' video.video_id %}{% if selected_playlist %}?playlist={{ selected_playlist }}{% endif %}">{{ video.title }}</a></div></div></div>
+{% empty %}<p>لا توجد نتائج.</p>{% endfor %}
+</div>
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-4">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?q={{ query }}&playlist={{ selected_playlist }}&content_type={{ selected_content_type }}&sort={{ selected_sort }}&page={{ page_obj.previous_page_number }}">السابق</a></li>
+    {% endif %}
+    {% for num in page_obj.paginator.page_range %}
+      {% if num == page_obj.number %}
+        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+      {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+        <li class="page-item"><a class="page-link" href="?q={{ query }}&playlist={{ selected_playlist }}&content_type={{ selected_content_type }}&sort={{ selected_sort }}&page={{ num }}">{{ num }}</a></li>
+      {% endif %}
+    {% endfor %}
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?q={{ query }}&playlist={{ selected_playlist }}&content_type={{ selected_content_type }}&sort={{ selected_sort }}&page={{ page_obj.next_page_number }}">التالي</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}
