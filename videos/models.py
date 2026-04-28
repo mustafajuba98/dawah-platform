@@ -1,6 +1,73 @@
 from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.db import models
+
+
+class MosqueLesson(models.Model):
+    WEEKDAY_CHOICES = (
+        (0, "الاثنين"),
+        (1, "الثلاثاء"),
+        (2, "الأربعاء"),
+        (3, "الخميس"),
+        (4, "الجمعة"),
+        (5, "السبت"),
+        (6, "الأحد"),
+    )
+
+    mosque_name = models.CharField(max_length=255)
+    title = models.CharField(max_length=255)
+    lesson_time = models.TimeField(null=True, blank=True)
+    manual_time_text = models.CharField(max_length=120, blank=True)
+    is_weekly = models.BooleanField(default=True)
+    weekday = models.PositiveSmallIntegerField(choices=WEEKDAY_CHOICES, null=True, blank=True)
+    one_time_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="created_mosque_lessons"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("is_weekly", "weekday", "one_time_date", "lesson_time", "-created_at")
+        indexes = [
+            models.Index(fields=["is_weekly"]),
+            models.Index(fields=["weekday"]),
+            models.Index(fields=["one_time_date"]),
+            models.Index(fields=["is_active"]),
+        ]
+
+    def clean(self):
+        if not self.lesson_time and not self.manual_time_text.strip():
+            raise ValidationError("يجب إدخال وقت الدرس كساعة أو كنص يدوي أو الاثنين.")
+        if self.is_weekly and self.weekday is None:
+            raise ValidationError("الدرس الأسبوعي يحتاج تحديد يوم الأسبوع.")
+        if not self.is_weekly and not self.one_time_date:
+            raise ValidationError("الدرس الفردي يحتاج تحديد التاريخ.")
+
+    def __str__(self) -> str:
+        return f"{self.mosque_name} - {self.title}"
+
+
+class TodoItem(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="todo_items")
+    title = models.CharField(max_length=255)
+    notes = models.TextField(blank=True)
+    is_done = models.BooleanField(default=False)
+    due_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("is_done", "due_at", "-created_at")
+        indexes = [
+            models.Index(fields=["user", "is_done"]),
+            models.Index(fields=["due_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user.username} - {self.title}"
 
 
 class Video(models.Model):

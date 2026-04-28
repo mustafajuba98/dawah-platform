@@ -39,6 +39,41 @@
   <div class="card border-0 shadow-sm">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 mb-0">تنبيهات دروس المسجد</h2>
+        <a href="{% url 'mosque_lessons' %}" class="btn btn-outline-success btn-sm">عرض كل المواعيد</a>
+      </div>
+      <div class="row g-2">
+        {% for lesson in lesson_announcements %}
+          <div class="col-md-6">
+            <div class="border rounded p-2 h-100">
+              <div class="fw-semibold mb-1">{{ lesson.title }}</div>
+              <div class="small text-muted mb-1">{{ lesson.mosque_name }}</div>
+              <div class="small">
+                {% if lesson.is_weekly %}
+                  أسبوعي -
+                  {% for value, label in weekday_choices %}
+                    {% if lesson.weekday == value %}{{ label }}{% endif %}
+                  {% endfor %}
+                {% else %}
+                  مرة واحدة - {{ lesson.one_time_date|date:"Y-m-d" }}
+                {% endif %}
+                {% if lesson.lesson_time %} | {{ lesson.lesson_time|time:"H:i" }}{% endif %}
+                {% if lesson.manual_time_text %} | {{ lesson.manual_time_text }}{% endif %}
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <p class="text-muted mb-0">لا توجد تنبيهات دروس مضافة حاليًا.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mb-4">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
         <h2 class="h5 mb-0">تنبيهات بوت التليجرام</h2>
         <a href="{% url 'bot_notifications' %}" class="btn btn-outline-success btn-sm">عرض الكل</a>
       </div>

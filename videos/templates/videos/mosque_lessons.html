@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}مواعيد دروس المسجد{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">تنبيهات مواعيد الدروس الدينية</h1>
+  {% if can_manage_lessons %}
+    <span class="badge bg-success">إدارة: أدمن / مشرف</span>
+  {% endif %}
+</div>
+
+{% if can_manage_lessons %}
+<section class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <h2 class="h6 mb-3">{% if editing_lesson %}تعديل درس{% else %}إضافة درس جديد{% endif %}</h2>
+    <form method="post" class="row g-3">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save">
+      {% if editing_lesson %}<input type="hidden" name="lesson_id" value="{{ editing_lesson.id }}">{% endif %}
+      <div class="col-md-6">
+        <label class="form-label">{{ form.mosque_name.label }}</label>
+        {{ form.mosque_name }}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{{ form.title.label }}</label>
+        {{ form.title }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.lesson_time.label }}</label>
+        {{ form.lesson_time }}
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">{{ form.manual_time_text.label }}</label>
+        {{ form.manual_time_text }}
+      </div>
+      <div class="col-md-4">
+        <div class="form-check mt-4">
+          {{ form.is_weekly }}
+          <label class="form-check-label">{{ form.is_weekly.label }}</label>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.weekday.label }}</label>
+        {{ form.weekday }}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.one_time_date.label }}</label>
+        {{ form.one_time_date }}
+      </div>
+      <div class="col-md-4">
+        <div class="form-check mt-4">
+          {{ form.is_active }}
+          <label class="form-check-label">{{ form.is_active.label }}</label>
+        </div>
+      </div>
+      {% if form.errors %}
+      <div class="col-12">
+        <div class="alert alert-danger mb-0">
+          {{ form.non_field_errors }}
+          {% for field in form %}
+            {% for error in field.errors %}
+              <div>{{ error }}</div>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-success" type="submit">حفظ</button>
+        {% if editing_lesson %}
+          <a class="btn btn-outline-secondary" href="{% url 'mosque_lessons' %}">إلغاء التعديل</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+<section class="card border-0 shadow-sm">
+  <div class="card-body">
+    <h2 class="h6 mb-3">كل المواعيد</h2>
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>المسجد</th>
+            <th>العنوان</th>
+            <th>النوع</th>
+            <th>الموعد</th>
+            {% if can_manage_lessons %}<th>إجراءات</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for lesson in lessons %}
+            <tr>
+              <td>{{ lesson.mosque_name }}</td>
+              <td>{{ lesson.title }}</td>
+              <td>
+                {% if lesson.is_weekly %}
+                  أسبوعي
+                {% else %}
+                  فردي
+                {% endif %}
+              </td>
+              <td>
+                {% if lesson.is_weekly %}
+                  {% for value, label in weekday_choices %}
+                    {% if lesson.weekday == value %}{{ label }}{% endif %}
+                  {% endfor %}
+                {% else %}
+                  {{ lesson.one_time_date|date:"Y-m-d" }}
+                {% endif %}
+                {% if lesson.lesson_time %} - {{ lesson.lesson_time|time:"H:i" }}{% endif %}
+                {% if lesson.manual_time_text %} - {{ lesson.manual_time_text }}{% endif %}
+              </td>
+              {% if can_manage_lessons %}
+              <td class="d-flex gap-2">
+                <a class="btn btn-outline-primary btn-sm" href="{% url 'mosque_lessons' %}?edit={{ lesson.id }}">تعديل</a>
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                  <button class="btn btn-outline-danger btn-sm" type="submit">حذف</button>
+                </form>
+              </td>
+              {% endif %}
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-muted">لا توجد مواعيد مضافة حاليًا.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}

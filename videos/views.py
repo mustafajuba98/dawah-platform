@@ -15,15 +15,17 @@ from django.utils import timezone
 from django.utils.html import escape
 from django.utils.text import slugify
 
-from videos.forms import RegistrationForm
+from videos.forms import MosqueLessonForm, RegistrationForm, TodoItemForm
 from videos.models import (
     EmailVerificationPending,
     Favorite,
+    MosqueLesson,
     Playlist,
     Post,
     PostComment,
     PostLike,
     SpiritPin,
+    TodoItem,
     UserProfile,
     Video,
     VideoPlaylist,
@@ -32,6 +34,20 @@ from videos.services.email_delivery import send_registration_verification_email
 from videos.services.prayer import fetch_prayer_timings_cached
 from videos.services.spiritual import build_spirit_cards
 from bot.models import BotNotification
+
+
+def _ordered_lessons(queryset):
+    lessons = list(queryset)
+
+    def lesson_sort_key(lesson):
+        weekly_bucket = 0 if lesson.is_weekly else 1
+        weekday = lesson.weekday if lesson.weekday is not None else 99
+        one_time_date = lesson.one_time_date.isoformat() if lesson.one_time_date else "9999-99-99"
+        time_val = lesson.lesson_time.isoformat() if lesson.lesson_time else "99:99:99"
+        return (weekly_bucket, weekday, one_time_date, time_val, lesson.mosque_name.lower())
+
+    lessons.sort(key=lesson_sort_key)
+    return lessons
 
 
 def home(request):
@@ -69,6 +85,8 @@ def home(request):
             "telegram_bot_url": "http://t.me/Omar_ebnel_araby_bot",
             "whatsapp_group_url": "https://chat.whatsapp.com/Ift7nI5qurWE0sX1rgfs0n?mode=ems_copy_t",
             "landing_notifications": BotNotification.objects.all()[:3],
+            "lesson_announcements": _ordered_lessons(MosqueLesson.objects.filter(is_active=True)[:8]),
+            "weekday_choices": MosqueLesson.WEEKDAY_CHOICES,
         },
     )
 
@@ -77,6 +95,86 @@ def bot_notifications(request):
     notifications = BotNotification.objects.all().order_by("-sent_at")
     page_obj = Paginator(notifications, 20).get_page(request.GET.get("page"))
     return render(request, "videos/bot_notifications.html", {"page_obj": page_obj})
+
+
+def mosque_lessons(request):
+    lessons_qs = MosqueLesson.objects.select_related("created_by").all()
+    can_moderate = _can_moderate(request.user)
+    editing_lesson = None
+
+    if request.method == "POST":
+        if not can_moderate:
+            return HttpResponseForbidden("Forbidden")
+
+        action = request.POST.get("action", "save")
+        lesson_id = request.POST.get("lesson_id", "").strip()
+
+        if action == "delete" and lesson_id:
+            lesson = get_object_or_404(MosqueLesson, id=lesson_id)
+            lesson.delete()
+            messages.success(request, "تم حذف تنبيه الدرس.")
+            return redirect("mosque_lessons")
+
+        instance = MosqueLesson.objects.filter(id=lesson_id).first() if lesson_id else None
+        form = MosqueLessonForm(request.POST, instance=instance)
+        if form.is_valid():
+            lesson = form.save(commit=False)
+            if lesson.created_by_id is None:
+                lesson.created_by = request.user
+            lesson.save()
+            messages.success(request, "تم حفظ تنبيه الدرس بنجاح.")
+            return redirect("mosque_lessons")
+        editing_lesson = instance
+    else:
+        edit_id = request.GET.get("edit", "").strip()
+        if can_moderate and edit_id:
+            editing_lesson = MosqueLesson.objects.filter(id=edit_id).first()
+        form = MosqueLessonForm(instance=editing_lesson) if can_moderate else None
+
+    return render(
+        request,
+        "videos/mosque_lessons.html",
+        {
+            "lessons": _ordered_lessons(lessons_qs),
+            "can_manage_lessons": can_moderate,
+            "form": form,
+            "editing_lesson": editing_lesson,
+            "weekday_choices": MosqueLesson.WEEKDAY_CHOICES,
+        },
+    )
+
+
+@login_required
+def my_todos(request):
+    form = TodoItemForm()
+    if request.method == "POST":
+        action = request.POST.get("action", "add")
+        todo_id = request.POST.get("todo_id", "").strip()
+
+        if action == "add":
+            form = TodoItemForm(request.POST)
+            if form.is_valid():
+                todo = form.save(commit=False)
+                todo.user = request.user
+                todo.save()
+                messages.success(request, "تمت إضافة المهمة.")
+                return redirect("my_todos")
+        elif action == "toggle" and todo_id:
+            todo = get_object_or_404(TodoItem, id=todo_id, user=request.user)
+            todo.is_done = not todo.is_done
+            todo.save(update_fields=["is_done", "updated_at"])
+            messages.success(request, "تم تحديث حالة المهمة.")
+            return redirect("my_todos")
+        elif action == "delete" and todo_id:
+            todo = get_object_or_404(TodoItem, id=todo_id, user=request.user)
+            todo.delete()
+            messages.success(request, "تم حذف المهمة.")
+            return redirect("my_todos")
+    else:
+        form = TodoItemForm()
+
+    todos = TodoItem.objects.filter(user=request.user).order_by("is_done", "due_at", "-created_at")
+    return render(request, "videos/my_todos.html", {"form": form, "todos": todos})
 
 
 def register(request):

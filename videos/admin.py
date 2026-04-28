@@ -3,11 +3,13 @@ from django.contrib import admin
 from videos.models import (
     EmailVerificationPending,
     Favorite,
+    MosqueLesson,
     Playlist,
     Post,
     PostComment,
     PostLike,
     SyncLog,
+    TodoItem,
     UserProfile,
     Video,
     VideoPlaylist,
@@ -92,3 +94,17 @@ class PostCommentAdmin(admin.ModelAdmin):
 class PostLikeAdmin(admin.ModelAdmin):
     list_display = ("post", "user", "created_at")
     search_fields = ("post__title", "user__username")
+
+
+@admin.register(TodoItem)
+class TodoItemAdmin(admin.ModelAdmin):
+    list_display = ("user", "title", "is_done", "due_at", "created_at")
+    list_filter = ("is_done", "created_at")
+    search_fields = ("user__username", "title", "notes")
+
+
+@admin.register(MosqueLesson)
+class MosqueLessonAdmin(admin.ModelAdmin):
+    list_display = ("mosque_name", "title", "is_weekly", "weekday", "one_time_date", "lesson_time", "is_active")
+    list_filter = ("is_weekly", "weekday", "is_active")
+    search_fields = ("mosque_name", "title", "manual_time_text")
